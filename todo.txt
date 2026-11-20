@@ -1,2 +1,3 @@
-- timer não tá funcionando. era bom tb botar um botão pra escolher ou não dar play no timer caso a pessoa queira
-
+[x] timer não tá funcionando. era bom tb botar um botão pra escolher ou não dar play no timer caso a pessoa queira
+    -> o timer só iniciava depois de usar o botão Embaralhar. Agora tem ▶ Iniciar / ⏸ Pausar / ⟲ Zerar,
+       a tecla T e a opção de início automático (ligada por padrão) no card do canto superior esquerdo.
