@@ -141,10 +141,10 @@ Em conformidade com as instruções e exigências éticas do projeto:
 
 ### Ferramenta 1: Google Antigravity / Gemini 3.8
 * **Objetivo do uso:**
-  1. Identificação do gargalo técnico do protótipo inicial (substituição do modelo `.glb` monolítico pela arquitetura procedural correta de 27 cubinhos em Three.js).
-  2. Implementação das rotinas matemáticas de rotação via `THREE.Group` e cálculo de interpolação angular suave.
-  3. Resolução da acumulação de erros de ponto flutuante nas rotações (snapping de coordenadas e matriz ortonormal).
-  4. Formulação do algoritmo de detecção de vitória vetorial.
+  . Identificação do gargalo técnico do protótipo inicial (substituição do modelo `.glb` monolítico pela arquitetura procedural correta de 27 cubinhos em Three.js).
+  . Implementação das rotinas matemáticas de rotação via `THREE.Group` e cálculo de interpolação angular suave.
+  . Resolução da acumulação de erros de ponto flutuante nas rotações (snapping de coordenadas e matriz ortonormal).
+  . Formulação do algoritmo de detecção de vitória vetorial.
 * **Prompts principais utilizados:**
   - *"Como agrupar dinamicamente os 9 cubinhos de uma face no Three.js usando `THREE.Group` e `attach` sem quebrar as transformações mundiais?"*
   - *"Como evitar acúmulo de erro de precisão numérica de ponto flutuante nas rotações sucessivas do cubo mágico em Three.js?"*
@@ -154,8 +154,8 @@ Em conformidade com as instruções e exigências éticas do projeto:
 
 ### Ferramenta 2: Claude Sonnet 5.5 (Anthropic)
 * **Objetivo do uso:** fase de integração e acabamento (parte do Integrante 3):
-  1. Diagnóstico do cronômetro que não iniciava (item do `todo.txt`): ele só começava depois de usar o botão Embaralhar. Foi refeito como cronômetro opcional, com iniciar/pausar/continuar/zerar e início automático configurável.
-  2. Correções de integração: tecla `Ctrl+R` (e outros atalhos do navegador) girando o cubo em vez de funcionar; Espaço pressionado durante o embaralhamento empilhando embaralhamentos; Resetar durante o embaralhamento deixando uma "partida fantasma"; aviso de vitória reaparecendo; cubo parcialmente escondido atrás do painel inferior.
-  3. Temas de cores: duas novas paletas (Retrô e Daltônico), destaque da paleta ativa e persistência das preferências em `localStorage`.
+  . Diagnóstico do cronômetro que não iniciava (item do `todo.txt`): ele só começava depois de usar o botão Embaralhar. Foi refeito como cronômetro opcional, com iniciar/pausar/continuar/zerar e início automático configurável.
+  . Correções de integração: tecla `Ctrl+R` (e outros atalhos do navegador) girando o cubo em vez de funcionar; Espaço pressionado durante o embaralhamento empilhando embaralhamentos; Resetar durante o embaralhamento deixando uma "partida fantasma"; aviso de vitória reaparecendo; cubo parcialmente escondido atrás do painel inferior.
+  . Temas de cores: duas novas paletas (Retrô e Daltônico), destaque da paleta ativa e persistência das preferências em `localStorage`.
 * **Prompt principal utilizado:**
-  - *"como fazer um timer para `index.html`"*
+  - *"como fazer um timer e também temas de cores `index.html`"*
