@@ -4,7 +4,7 @@ Projeto final prático desenvolvido para a disciplina de **Computação Gráfica
 
 O projeto consiste em uma simulação interativa tridimensional completa de um **Cubo Mágico 3×3×3** em **Three.js**, com câmera orbital, iluminação realista, agrupamento dinâmico via grafo de cena (`THREE.Group`), interpolação angular suave, eliminação de deriva numérica, detecção automática de vitória, cronômetro opcional e temas de cores personalizáveis.
 
-![Tela do jogo: cubo embaralhado, contador de movimentos, cronômetro rodando e painel de temas](docs/screenshot.png)
+
 
 ## 📑 Sumário
 
