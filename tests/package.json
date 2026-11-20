@@ -1,0 +1,14 @@
+{
+  "name": "cubo-magico-testes",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Testes gerais do Cubo Mágico 3D rodando a página real em um Chrome headless",
+  "scripts": {
+    "test": "node testes-gerais.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.18.1",
+    "three": "0.160.1"
+  }
+}
