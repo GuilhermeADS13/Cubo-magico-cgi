@@ -137,6 +137,64 @@
         }
 
         /* ========================================================
+           CRONÔMETRO OPCIONAL (iniciar / pausar / zerar / automático)
+           ======================================================== */
+        .metrica-valor.rodando {
+            color: #34d399;
+        }
+
+        .cronometro-controles {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .btn-timer {
+            flex: 1;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: rgba(56, 189, 248, 0.16);
+            color: #e0f2fe;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-timer:hover {
+            background: rgba(56, 189, 248, 0.32);
+        }
+
+        .btn-timer.secundario {
+            border-color: rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.06);
+            color: #cbd5e1;
+        }
+
+        .btn-timer.secundario:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .timer-auto {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            font-size: 11.5px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+
+        .timer-auto input {
+            width: 14px;
+            height: 14px;
+            accent-color: #38bdf8;
+            cursor: pointer;
+        }
+
+        /* ========================================================
            BARRA INFERIOR: CONTROLE DE MOVIMENTAÇÃO DAS FACES
            ======================================================== */
         .painel-movimentos {
@@ -487,6 +545,12 @@
             color: var(--accent);
         }
 
+        .btn-preset.ativo {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #ffffff;
+        }
+
         /* Configurações de velocidade */
         .velocidade-section {
             margin-bottom: 14px;
@@ -652,10 +716,20 @@
             </div>
         </div>
 
+        <div class="cronometro-controles">
+            <button class="btn-timer" id="btn-timer-toggle" title="Iniciar ou pausar o cronômetro (atalho: T)">▶ Iniciar</button>
+            <button class="btn-timer secundario" id="btn-timer-zerar" title="Zerar o cronômetro">⟲ Zerar</button>
+        </div>
+        <label class="timer-auto" for="timer-auto">
+            <input type="checkbox" id="timer-auto" checked>
+            <span>Iniciar sozinho no 1º movimento após embaralhar</span>
+        </label>
+
         <div class="teclas-ajuda">
             <strong>Atalhos de Teclado:</strong><br>
             <span class="kbd-tag">U</span> <span class="kbd-tag">D</span> <span class="kbd-tag">L</span> <span class="kbd-tag">R</span> <span class="kbd-tag">F</span> <span class="kbd-tag">B</span>: Sentido Horário<br>
             <span class="kbd-tag">Shift</span> + Letra: Sentido Anti-Horário (linha inversa)<br>
+            <span class="kbd-tag">T</span>: Iniciar/pausar cronômetro<br>
             <span class="kbd-tag">Espaço</span>: Embaralhar &nbsp;|&nbsp; 🖱️ Arraste para orbitar
         </div>
     </div>
@@ -793,6 +867,8 @@
                 <button class="btn-preset" data-tema="classico">Clássico</button>
                 <button class="btn-preset" data-tema="pastel">Pastel</button>
                 <button class="btn-preset" data-tema="neon">Cyberpunk</button>
+                <button class="btn-preset" data-tema="retro">Retrô</button>
+                <button class="btn-preset" data-tema="daltonico" title="Paleta Okabe-Ito, distinguível por quem tem daltonismo">Daltônico</button>
             </div>
         </div>
 
@@ -841,7 +917,8 @@
             0.1,
             1000
         );
-        camera.position.set(4.8, 3.8, 5.8);
+        // Distância inicial maior para o cubo não ficar escondido atrás do painel inferior
+        camera.position.set(6.0, 4.75, 7.25);
 
         // 3. Renderizador WebGL
         const renderer = new THREE.WebGLRenderer({
@@ -903,6 +980,23 @@
                 left: '#9B5DE5',
                 top: '#FFFFFF',
                 bottom: '#FEE440'
+            },
+            retro: {
+                front: '#3A6EA5',
+                back: '#5B8C5A',
+                right: '#C0392B',
+                left: '#E08E2B',
+                top: '#F4EBD0',
+                bottom: '#E3B23C'
+            },
+            // Paleta Okabe-Ito: distinguível por pessoas com os tipos mais comuns de daltonismo
+            daltonico: {
+                front: '#0072B2',
+                back: '#009E73',
+                right: '#D55E00',
+                left: '#CC79A7',
+                top: '#FFFFFF',
+                bottom: '#F0E442'
             }
         };
 
@@ -1063,10 +1157,20 @@
 
         // Estatísticas e Jogo (Módulo 3 / Extras)
         let contadorMovimentos = 0;
-        let cronometroIniciado = false;
-        let tempoInicio = null;
-        let intervaloCronometro = null;
+        // "Partida em andamento": true depois que o botão Embaralhar termina e
+        // volta a false ao resetar ou ao vencer (só então a vitória é detectada).
         let cuboEmbaralhadoPeloUsuario = false;
+        let embaralhando = false;
+        let aoEsvaziarFila = null; // callback executado uma vez quando a fila de movimentos zera
+
+        // Cronômetro opcional. Guarda o tempo acumulado para permitir pausar/continuar.
+        const cronometro = {
+            acumuladoMs: 0,
+            inicioMs: 0,
+            rodando: false,
+            automatico: true, // inicia sozinho no 1º movimento após embaralhar
+            intervalo: null
+        };
 
         // Função de suavização (Easing: Cubic Ease In-Out)
         function easeInOutCubic(t) {
@@ -1103,12 +1207,17 @@
          * ou embaralhamentos não se sobreponham nem quebrem a cena.
          */
         function girarFace(face, horario = true, duracao = duracaoPadrao) {
+            // Durante o embaralhamento os comandos do jogador são ignorados,
+            // para não misturar giros manuais com a sequência aleatória.
+            if (embaralhando) return;
+
             if (modalVitoria.classList.contains('ativo')) {
                 fecharModalVitoria();
             }
 
-            // Inicia o cronômetro no primeiro movimento manual
-            if (!cronometroIniciado && cuboEmbaralhadoPeloUsuario) {
+            // Cronômetro automático: começa no primeiro giro do jogador depois de embaralhar
+            if (cronometro.automatico && cuboEmbaralhadoPeloUsuario &&
+                !cronometro.rodando && cronometro.acumuladoMs === 0) {
                 iniciarCronometro();
             }
 
@@ -1127,6 +1236,15 @@
         function executarProximoMovimento() {
             if (filaMovimentos.length === 0) {
                 animando = false;
+
+                // Ação agendada para o fim da fila (ex.: concluir o embaralhamento)
+                if (aoEsvaziarFila) {
+                    const acao = aoEsvaziarFila;
+                    aoEsvaziarFila = null;
+                    acao();
+                    return;
+                }
+
                 atualizarStatus('Pronto para jogar', 'ready');
                 verificarVitoria();
                 return;
@@ -1239,10 +1357,16 @@
          * Gera uma sequência de 20 movimentos válidos com animação acelerada.
          */
         function embaralharCubo(quantidade = 20) {
+            // Evita empilhar embaralhamentos (ex.: Espaço pressionado várias vezes)
+            if (embaralhando) return;
+            embaralhando = true;
+
             const faces = ['U', 'D', 'L', 'R', 'F', 'B'];
             const duracaoEmbaralhar = 90; // Rotação rápida para o embaralhamento
             let ultimaFace = null;
 
+            fecharModalVitoria();
+            zerarCronometro();
             document.getElementById('btn-embaralhar').disabled = true;
             atualizarStatus('Embaralhando cubo...', 'busy');
 
@@ -1263,19 +1387,17 @@
                 });
             }
 
-            // Quando a fila esvaziar, reabilita o botão e reseta métricas
-            const checarFimEmbaralhamento = setInterval(() => {
-                if (filaMovimentos.length === 0 && !animando) {
-                    clearInterval(checarFimEmbaralhamento);
-                    document.getElementById('btn-embaralhar').disabled = false;
-                    cuboEmbaralhadoPeloUsuario = true;
-                    contadorMovimentos = 0;
-                    document.getElementById('contador-movimentos').textContent = '0';
-                    pararCronometro();
-                    document.getElementById('tempo-decorrido').textContent = '00:00';
-                    atualizarStatus('Cubo embaralhado! Boa sorte!', 'ready');
-                }
-            }, 100);
+            // Quando a fila esvaziar, reabilita o botão, zera as métricas e libera o jogo.
+            // (Se o jogador resetar no meio, esta ação é cancelada em resetarCubo.)
+            aoEsvaziarFila = () => {
+                embaralhando = false;
+                document.getElementById('btn-embaralhar').disabled = false;
+                cuboEmbaralhadoPeloUsuario = true;
+                contadorMovimentos = 0;
+                document.getElementById('contador-movimentos').textContent = '0';
+                zerarCronometro();
+                atualizarStatus('Cubo embaralhado! Boa sorte!', 'ready');
+            };
 
             if (!animando) {
                 executarProximoMovimento();
@@ -1288,6 +1410,9 @@
          */
         function resetarCubo() {
             filaMovimentos.length = 0;
+            aoEsvaziarFila = null;
+            embaralhando = false;
+            document.getElementById('btn-embaralhar').disabled = false;
             if (grupoPivo) {
                 scene.remove(grupoPivo);
                 grupoPivo = null;
@@ -1298,8 +1423,7 @@
             construirCuboMagico();
             contadorMovimentos = 0;
             document.getElementById('contador-movimentos').textContent = '0';
-            pararCronometro();
-            document.getElementById('tempo-decorrido').textContent = '00:00';
+            zerarCronometro();
             cuboEmbaralhadoPeloUsuario = false;
             atualizarStatus('Cubo resetado com sucesso!', 'ready');
             fecharModalVitoria();
@@ -1315,6 +1439,14 @@
         function verificarVitoria() {
             if (!cuboEmbaralhadoPeloUsuario || contadorMovimentos < 3) return;
 
+            if (cuboEstaResolvido()) {
+                pausarCronometro();
+                dispararVitoria();
+            }
+        }
+
+        // Verificação pura do estado do cubo (sem efeitos colaterais na interface)
+        function cuboEstaResolvido() {
             const facesNormais = [
                 { nome: 'U', normal: new THREE.Vector3(0, 1, 0) },
                 { nome: 'D', normal: new THREE.Vector3(0, -1, 0) },
@@ -1333,14 +1465,9 @@
                 new THREE.Vector3(0, 0, -1)  // 5: -Z
             ];
 
-            let resolvido = true;
-
             for (const face of facesNormais) {
                 const cubosFace = obterCubinhosDaFace(face.nome);
-                if (cubosFace.length !== 9) {
-                    resolvido = false;
-                    break;
-                }
+                if (cubosFace.length !== 9) return false;
 
                 let materialFacePadrao = null;
 
@@ -1355,33 +1482,26 @@
                         }
                     }
 
-                    if (!matFaceEncontrado || matFaceEncontrado === materiaisFaces.interior) {
-                        resolvido = false;
-                        break;
-                    }
+                    if (!matFaceEncontrado || matFaceEncontrado === materiaisFaces.interior) return false;
 
                     if (!materialFacePadrao) {
                         materialFacePadrao = matFaceEncontrado;
                     } else if (materialFacePadrao !== matFaceEncontrado) {
-                        resolvido = false;
-                        break;
+                        return false;
                     }
                 }
-
-                if (!resolvido) break;
             }
 
-            if (resolvido) {
-                pararCronometro();
-                dispararVitoria();
-            }
+            return true;
         }
 
         const modalVitoria = document.getElementById('modal-vitoria');
         function dispararVitoria() {
-            const tempoTexto = document.getElementById('tempo-decorrido').textContent;
-            document.getElementById('texto-vitoria').textContent = 
-                `Você resolveu o cubo em ${contadorMovimentos} movimentos e ${tempoTexto}!`;
+            // Encerra a partida: o aviso não reaparece até o próximo embaralhamento
+            cuboEmbaralhadoPeloUsuario = false;
+            atualizarDisplayCronometro();
+            document.getElementById('texto-vitoria').textContent =
+                `Você resolveu o cubo em ${contadorMovimentos} movimentos e ${formatarTempo(tempoDecorridoMs())}!`;
             modalVitoria.classList.add('ativo');
             atualizarStatus('🎉 Parabéns! Cubo Resolvido!', 'ready');
         }
@@ -1395,25 +1515,55 @@
             embaralharCubo(20);
         });
 
-        // Cronômetro
-        function iniciarCronometro() {
-            if (cronometroIniciado) return;
-            cronometroIniciado = true;
-            tempoInicio = Date.now();
-            intervaloCronometro = setInterval(() => {
-                const deltaSegundos = Math.floor((Date.now() - tempoInicio) / 1000);
-                const minutos = String(Math.floor(deltaSegundos / 60)).padStart(2, '0');
-                const segundos = String(deltaSegundos % 60).padStart(2, '0');
-                document.getElementById('tempo-decorrido').textContent = `${minutos}:${segundos}`;
-            }, 1000);
+        // Cronômetro (opcional): iniciar, pausar/continuar e zerar
+        function tempoDecorridoMs() {
+            return cronometro.acumuladoMs + (cronometro.rodando ? Date.now() - cronometro.inicioMs : 0);
         }
 
-        function pararCronometro() {
-            cronometroIniciado = false;
-            if (intervaloCronometro) {
-                clearInterval(intervaloCronometro);
-                intervaloCronometro = null;
-            }
+        function formatarTempo(ms) {
+            const total = Math.floor(ms / 1000);
+            const horas = Math.floor(total / 3600);
+            const minutos = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+            const segundos = String(total % 60).padStart(2, '0');
+            return horas > 0 ? `${horas}:${minutos}:${segundos}` : `${minutos}:${segundos}`;
+        }
+
+        function atualizarDisplayCronometro() {
+            const display = document.getElementById('tempo-decorrido');
+            display.textContent = formatarTempo(tempoDecorridoMs());
+            display.classList.toggle('rodando', cronometro.rodando);
+
+            const botao = document.getElementById('btn-timer-toggle');
+            if (cronometro.rodando) botao.textContent = '⏸ Pausar';
+            else botao.textContent = cronometro.acumuladoMs > 0 ? '▶ Continuar' : '▶ Iniciar';
+        }
+
+        function iniciarCronometro() {
+            if (cronometro.rodando) return;
+            cronometro.rodando = true;
+            cronometro.inicioMs = Date.now();
+            cronometro.intervalo = setInterval(atualizarDisplayCronometro, 200);
+            atualizarDisplayCronometro();
+        }
+
+        function pausarCronometro() {
+            if (!cronometro.rodando) return;
+            cronometro.acumuladoMs += Date.now() - cronometro.inicioMs;
+            cronometro.rodando = false;
+            clearInterval(cronometro.intervalo);
+            cronometro.intervalo = null;
+            atualizarDisplayCronometro();
+        }
+
+        function zerarCronometro() {
+            pausarCronometro();
+            cronometro.acumuladoMs = 0;
+            atualizarDisplayCronometro();
+        }
+
+        function alternarCronometro() {
+            if (cronometro.rodando) pausarCronometro();
+            else iniciarCronometro();
         }
 
         // ====================================================================
@@ -1439,29 +1589,59 @@
             resetarCubo();
         });
 
+        // Controles do cronômetro
+        document.getElementById('btn-timer-toggle').addEventListener('click', alternarCronometro);
+        document.getElementById('btn-timer-zerar').addEventListener('click', zerarCronometro);
+        document.getElementById('timer-auto').addEventListener('change', (e) => {
+            cronometro.automatico = e.target.checked;
+            salvarConfig();
+        });
+
         // Controles de Velocidade
+        function definirVelocidade(ms) {
+            duracaoPadrao = ms;
+            document.querySelectorAll('.btn-vel').forEach(b => {
+                b.classList.toggle('ativo', parseInt(b.getAttribute('data-ms'), 10) === ms);
+            });
+        }
+
         document.querySelectorAll('.btn-vel').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.btn-vel').forEach(b => b.classList.remove('ativo'));
-                btn.classList.add('ativo');
-                duracaoPadrao = parseInt(btn.getAttribute('data-ms'), 10);
+                definirVelocidade(parseInt(btn.getAttribute('data-ms'), 10));
+                salvarConfig();
             });
+        });
+
+        // Depois de um clique de mouse, tira o foco do botão/checkbox para que
+        // Espaço e as letras continuem funcionando como atalhos do jogo.
+        document.addEventListener('click', (e) => {
+            const alvo = e.target.closest('button, input[type="checkbox"]');
+            if (alvo && e.detail > 0) alvo.blur();
         });
 
         // Atalhos de Teclado
         window.addEventListener('keydown', (e) => {
-            // Ignora se estiver digitando em campos de entrada
-            if (e.target.tagName === 'INPUT') return;
+            const alvo = e.target;
+
+            // Ignora campos de texto; checkbox e seletor de cor não "consomem" as letras
+            if (alvo.tagName === 'INPUT' && !['checkbox', 'color'].includes(alvo.type)) return;
+
+            // Não sequestra atalhos do navegador (Ctrl+R recarregar, Ctrl+F buscar, etc.)
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
 
             const tecla = e.key.toUpperCase();
-            const horario = !e.shiftKey;
 
             if (['U', 'D', 'L', 'R', 'F', 'B'].includes(tecla)) {
                 e.preventDefault();
-                girarFace(tecla, horario);
-            } else if (e.code === 'Space') {
+                if (!e.repeat) girarFace(tecla, !e.shiftKey); // segurar a tecla não enche a fila
+            } else if (tecla === 'T') {
                 e.preventDefault();
-                embaralharCubo(20);
+                if (!e.repeat) alternarCronometro();
+            } else if (e.code === 'Space') {
+                // Com um botão/checkbox focado pelo Tab, o Espaço ativa esse controle
+                if (alvo.tagName === 'BUTTON' || alvo.tagName === 'INPUT') return;
+                e.preventDefault();
+                if (!e.repeat) embaralharCubo(20);
             }
         });
 
@@ -1490,6 +1670,15 @@
         });
 
         const facesInputs = ['front', 'back', 'right', 'left', 'top', 'bottom'];
+        let temaAtivo = 'classico'; // vira null quando as cores são ajustadas manualmente
+
+        function marcarPresetAtivo(nomeTema) {
+            temaAtivo = nomeTema;
+            document.querySelectorAll('.btn-preset').forEach(b => {
+                b.classList.toggle('ativo', b.getAttribute('data-tema') === nomeTema);
+            });
+        }
+
         facesInputs.forEach(face => {
             const input = document.getElementById(face);
             const hexLabel = document.getElementById('hex-' + face);
@@ -1497,19 +1686,21 @@
             input.addEventListener('input', () => {
                 hexLabel.textContent = input.value.toUpperCase();
                 aplicarCoresCustomizadas();
+                marcarPresetAtivo(null);
+                salvarConfig();
             });
         });
 
+        function lerCoresDosInputs() {
+            const cores = {};
+            facesInputs.forEach(face => {
+                cores[face] = document.getElementById(face).value;
+            });
+            return cores;
+        }
+
         function aplicarCoresCustomizadas() {
-            const cores = {
-                front: document.getElementById('front').value,
-                back: document.getElementById('back').value,
-                right: document.getElementById('right').value,
-                left: document.getElementById('left').value,
-                top: document.getElementById('top').value,
-                bottom: document.getElementById('bottom').value
-            };
-            atualizarTexturasMateriais(cores);
+            atualizarTexturasMateriais(lerCoresDosInputs());
         }
 
         function carregarTema(nomeTema) {
@@ -1524,15 +1715,68 @@
             });
 
             atualizarTexturasMateriais(paleta);
+            marcarPresetAtivo(nomeTema);
         }
 
         document.querySelectorAll('.btn-preset').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tema = btn.getAttribute('data-tema');
                 carregarTema(tema);
+                salvarConfig();
                 atualizarStatus(`Tema "${btn.textContent}" aplicado!`, 'ready');
             });
         });
+
+        // ====================================================================
+        // PERSISTÊNCIA: cores, velocidade e cronômetro automático ficam salvos
+        // no navegador (localStorage) e voltam na próxima visita.
+        // ====================================================================
+        const CHAVE_CONFIG = 'cuboMagico.config.v1';
+
+        function salvarConfig() {
+            try {
+                localStorage.setItem(CHAVE_CONFIG, JSON.stringify({
+                    cores: lerCoresDosInputs(),
+                    tema: temaAtivo,
+                    duracao: duracaoPadrao,
+                    cronometroAutomatico: cronometro.automatico
+                }));
+            } catch (erro) {
+                // Armazenamento indisponível (ex.: modo privado): o jogo segue sem salvar.
+            }
+        }
+
+        function restaurarConfigSalva() {
+            let config;
+            try {
+                config = JSON.parse(localStorage.getItem(CHAVE_CONFIG));
+            } catch (erro) {
+                return;
+            }
+            if (!config || typeof config !== 'object') return;
+
+            const corValida = (c) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
+            if (config.cores && facesInputs.every(face => corValida(config.cores[face]))) {
+                facesInputs.forEach(face => {
+                    document.getElementById(face).value = config.cores[face];
+                    document.getElementById('hex-' + face).textContent = config.cores[face].toUpperCase();
+                });
+                atualizarTexturasMateriais(config.cores);
+                marcarPresetAtivo(temas[config.tema] ? config.tema : null);
+            }
+
+            if ([400, 240, 110].includes(config.duracao)) {
+                definirVelocidade(config.duracao);
+            }
+
+            if (typeof config.cronometroAutomatico === 'boolean') {
+                cronometro.automatico = config.cronometroAutomatico;
+                document.getElementById('timer-auto').checked = config.cronometroAutomatico;
+            }
+        }
+
+        marcarPresetAtivo(temaAtivo);
+        restaurarConfigSalva();
 
         // ====================================================================
         // LOOP PRINCIPAL DE RENDERIZAÇÃO
