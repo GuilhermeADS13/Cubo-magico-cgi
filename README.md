@@ -10,7 +10,7 @@ O projeto consiste em uma simulação interativa tridimensional completa de um *
 
 1. [Divisão oficial da equipe](#-divisão-oficial-da-equipe)
 2. [Como executar](#-como-executar)
-3. [Controles e interação](#️-controles-e-interação)
+3. [Controles e interação](#-controles-e-interação)
 4. [Regras do jogo](#-regras-do-jogo)
 5. [Arquitetura técnica](#-arquitetura-técnica-e-conceitos-de-computação-gráfica)
 6. [Estrutura do repositório](#-estrutura-do-repositório)
