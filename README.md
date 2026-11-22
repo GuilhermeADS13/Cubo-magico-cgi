@@ -145,16 +145,12 @@ Em conformidade com as instruções e exigências éticas do projeto:
   . Implementação das rotinas matemáticas de rotação via `THREE.Group` e cálculo de interpolação angular suave.
   . Resolução da acumulação de erros de ponto flutuante nas rotações (snapping de coordenadas e matriz ortonormal).
   . Formulação do algoritmo de detecção de vitória vetorial.
-* **Prompts principais utilizados:**
-  - *"Como agrupar dinamicamente os 9 cubinhos de uma face no Three.js usando `THREE.Group` e `attach` sem quebrar as transformações mundiais?"*
-  - *"Como evitar acúmulo de erro de precisão numérica de ponto flutuante nas rotações sucessivas do cubo mágico em Three.js?"*
-  - *"Implementação de interpolação suave com easing cúbico para animação de faces em Three.js."*
-  - *"Lógica para detecção de vitória no cubo mágico 3D calculando a normal no espaço de mundo dos materiais de cada peça."*
-* O registro completo da conversa está em [`chat antigravity.md`](chat%20antigravity.md).
+* **Prompt principal utilizado:**
+    * O registro completo da conversa está em `chat antigravity.md`.
 
 ### Ferramenta 2: Claude Sonnet 5.5 (Anthropic)
 * **Objetivo do uso:** fase de integração e acabamento (parte do Integrante 3):
-  . Diagnóstico do cronômetro que não iniciava (item do `todo.txt`): ele só começava depois de usar o botão Embaralhar. Foi refeito como cronômetro opcional, com iniciar/pausar/continuar/zerar e início automático configurável.
+  . Diagnóstico do cronômetro que não iniciava: ele só começava depois de usar o botão Embaralhar. Foi refeito como cronômetro opcional, com iniciar/pausar/continuar/zerar e início automático configurável.
   . Correções de integração: tecla `Ctrl+R` (e outros atalhos do navegador) girando o cubo em vez de funcionar; Espaço pressionado durante o embaralhamento empilhando embaralhamentos; Resetar durante o embaralhamento deixando uma "partida fantasma"; aviso de vitória reaparecendo; cubo parcialmente escondido atrás do painel inferior.
   . Temas de cores: duas novas paletas (Retrô e Daltônico), destaque da paleta ativa e persistência das preferências em `localStorage`.
 * **Prompt principal utilizado:**

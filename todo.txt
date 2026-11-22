@@ -1,2 +1,0 @@
-- timer não tá funcionando. era bom tb botar um botão pra escolher ou não dar play no timer caso a pessoa queira
-
