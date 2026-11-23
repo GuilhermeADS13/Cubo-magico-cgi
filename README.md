@@ -155,3 +155,10 @@ Em conformidade com as instruções e exigências éticas do projeto:
   . Temas de cores: duas novas paletas (Retrô e Daltônico), destaque da paleta ativa e persistência das preferências em `localStorage`.
 * **Prompt principal utilizado:**
   - *"como fazer um timer e também temas de cores `index.html`"*
+
+### Ferramenta 3: Claude (Anthropic)
+* **Objetivo do uso:** estrutura 3D e câmera (parte do Integrante 1):
+  . Configuração da cena 3D e cálculo das posições dos 27 cubinhos.
+  . Implementação da câmera 3D e configuração do OrbitControls, garantindo a visualização correta do cubo.
+* **Prompt principal utilizado:**
+  - *"Configuração da cena 3D calculando os 27 cubinhos para implementar a câmera 3d para a configuração do orbitcontrols garantindo assim a visualização correta do cubo"*
