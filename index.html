@@ -507,6 +507,30 @@
             background: transparent;
         }
 
+        .btn-aplicar {
+            width: 100%;
+            padding: 9px;
+            margin-bottom: 16px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            background: var(--accent);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s ease, opacity 0.2s ease;
+        }
+
+        .btn-aplicar:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+
+        .btn-aplicar:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+
         .presets-section {
             margin-bottom: 14px;
         }
@@ -860,6 +884,8 @@
                 </div>
             </div>
         </div>
+
+        <button class="btn-aplicar" id="btn-aplicar-cores" disabled>Aplicar cores</button>
 
         <div class="presets-section">
             <span class="presets-title">Paletas Rápidas</span>
@@ -1679,16 +1705,34 @@
             });
         }
 
+        // Os seletores só preparam a cor; ela vai para o cubo no botão "Aplicar cores"
+        let coresAplicadas = lerCoresDosInputs();
+        const btnAplicarCores = document.getElementById('btn-aplicar-cores');
+
+        function atualizarBotaoAplicar() {
+            const atuais = lerCoresDosInputs();
+            btnAplicarCores.disabled = facesInputs.every(
+                face => atuais[face].toLowerCase() === coresAplicadas[face].toLowerCase()
+            );
+        }
+
         facesInputs.forEach(face => {
             const input = document.getElementById(face);
             const hexLabel = document.getElementById('hex-' + face);
 
             input.addEventListener('input', () => {
                 hexLabel.textContent = input.value.toUpperCase();
-                aplicarCoresCustomizadas();
-                marcarPresetAtivo(null);
-                salvarConfig();
+                atualizarBotaoAplicar();
             });
+        });
+
+        btnAplicarCores.addEventListener('click', () => {
+            coresAplicadas = lerCoresDosInputs();
+            atualizarTexturasMateriais(coresAplicadas);
+            marcarPresetAtivo(null);
+            salvarConfig();
+            atualizarBotaoAplicar();
+            atualizarStatus('Cores aplicadas!', 'ready');
         });
 
         function lerCoresDosInputs() {
@@ -1697,10 +1741,6 @@
                 cores[face] = document.getElementById(face).value;
             });
             return cores;
-        }
-
-        function aplicarCoresCustomizadas() {
-            atualizarTexturasMateriais(lerCoresDosInputs());
         }
 
         function carregarTema(nomeTema) {
@@ -1715,6 +1755,8 @@
             });
 
             atualizarTexturasMateriais(paleta);
+            coresAplicadas = lerCoresDosInputs();
+            atualizarBotaoAplicar();
             marcarPresetAtivo(nomeTema);
         }
 
@@ -1736,7 +1778,7 @@
         function salvarConfig() {
             try {
                 localStorage.setItem(CHAVE_CONFIG, JSON.stringify({
-                    cores: lerCoresDosInputs(),
+                    cores: coresAplicadas,
                     tema: temaAtivo,
                     duracao: duracaoPadrao,
                     cronometroAutomatico: cronometro.automatico
@@ -1762,6 +1804,8 @@
                     document.getElementById('hex-' + face).textContent = config.cores[face].toUpperCase();
                 });
                 atualizarTexturasMateriais(config.cores);
+                coresAplicadas = lerCoresDosInputs();
+                atualizarBotaoAplicar();
                 marcarPresetAtivo(temas[config.tema] ? config.tema : null);
             }
 
